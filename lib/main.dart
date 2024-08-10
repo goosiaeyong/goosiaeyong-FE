@@ -1,8 +1,35 @@
+// lib/main.dart
+
 import 'package:flutter/material.dart';
-import 'package:stomp_dart_client/stomp_dart_client.dart';
+import 'package:provider/provider.dart';
+
+import 'data/datasources/stomp_client.dart';
+import 'data/repositories/chat_repository_impl.dart';
+import 'domain/usecases/send_message.dart';
+import 'domain/usecases/subscribe_to_chat.dart';
+import 'presentation/pages/chat_screen.dart';
+import 'presentation/viewmodels/chat_viewmodel.dart';
 
 void main() {
-  runApp(const MyApp());
+  final stompClient = StompClientSetup.setupClient();
+  final chatRepository = ChatRepositoryImpl(stompClient);
+  final sendMessageUseCase = SendMessage(chatRepository);
+  final subscribeToChatUseCase = SubscribeToChat(chatRepository);
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => ChatViewModel(
+            sendMessageUseCase: sendMessageUseCase,
+            subscribeToChatUseCase: subscribeToChatUseCase,
+          ),
+        ),
+        // 다른 Provider가 있다면 여기에 추가
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -10,113 +37,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter WebSocket Chat',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const ChatScreen(),
-    );
-  }
-}
-
-class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
-
-  @override
-  _ChatScreenState createState() => _ChatScreenState();
-}
-
-class _ChatScreenState extends State<ChatScreen> {
-  StompClient? stompClient;
-  final TextEditingController _controller = TextEditingController();
-  final List<String> _messages = [];
-
-  @override
-  void initState() {
-    super.initState();
-    connectStomp();
-  }
-
-  void connectStomp() {
-    stompClient = StompClient(
-      config: StompConfig(
-        url: 'ws://your.server.url/websocket',
-        onConnect: onConnect,
-        onWebSocketError: (dynamic error) => print(error.toString()),
-      ),
-    );
-
-    stompClient?.activate();
-  }
-
-  void onConnect(StompFrame frame) {
-    stompClient?.subscribe(
-      destination: '/topic/response',
-      callback: (frame) {
-        setState(() {
-          _messages.add(frame.body!);
-        });
-      },
-    );
-  }
-
-  void sendMessage(String message) {
-    stompClient?.send(
-      destination: '/app/message',
-      body: message,
-    );
-  }
-
-  @override
-  void dispose() {
-    stompClient?.deactivate();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('WebSocket Chat'),
-      ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_messages[index]),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextFormField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter your message',
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () {
-                    sendMessage(_controller.text);
-                    _controller.clear();
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return const MaterialApp(
+      home: ChatScreen(),
     );
   }
 }

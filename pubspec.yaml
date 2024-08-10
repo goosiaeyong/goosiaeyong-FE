@@ -1,14 +1,15 @@
 name: k_html_common
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
-  sdk: '>=3.4.4 <4.0.0'
+  sdk: ">=3.4.4 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  provider: ^6.1.2
   stomp_dart_client: ^2.0.0
 
 dev_dependencies:
