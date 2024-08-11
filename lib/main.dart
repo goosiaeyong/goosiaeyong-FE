@@ -16,6 +16,8 @@ void main() {
   final sendMessageUseCase = SendMessage(chatRepository);
   final subscribeToChatUseCase = SubscribeToChat(chatRepository);
 
+  stompClient.activate();
+
   runApp(
     MultiProvider(
       providers: [

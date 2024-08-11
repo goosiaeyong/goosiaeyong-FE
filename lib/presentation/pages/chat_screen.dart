@@ -38,20 +38,14 @@ class ChatScreen extends StatelessWidget {
                     onSubmitted: (text) {
                       final newMessage = ChatMessage(
                         id: DateTime.now().toString(),
-                        senderId: 'user1',
-                        receiverId: 'user2',
+                        senderId: 'user',
+                        receiverId: 'server',
                         content: text,
                         timestamp: DateTime.now(),
                       );
                       viewModel.sendMessage(newMessage);
                     },
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () {
-                    // Trigger message sending
-                  },
                 ),
               ],
             ),

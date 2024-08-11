@@ -1,5 +1,8 @@
 // lib/data/repositories/chat_repository_impl.dart
 
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 import '../../domain/entities/chat_message.dart';
@@ -13,7 +16,8 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   Future<void> sendMessage(ChatMessage message) async {
-    final frame = StompFrame.connect(
+    final frame = StompFrame(
+      command: 'SEND',
       headers: {
         'content-type': 'application/json',
       },
@@ -28,18 +32,31 @@ class ChatRepositoryImpl implements ChatRepository {
 
     stompClient.send(
       destination: '/app/chat.send',
+      // destination: '/app/chat/${widget.chatId}',
       body: frame.body,
     );
   }
 
   @override
   Stream<ChatMessage> subscribeToChat(String chatRoomId) {
-    stompClient.connect();
-    return stompClient
-        .subscribe(destination: '/topic/$chatRoomId')
-        .map((StompFrame frame) {
-      final chatMessageModel = ChatMessageModel.fromJson(frame.body);
-      return chatMessageModel.toEntity();
-    });
+    final controller = StreamController<ChatMessage>();
+
+    stompClient.subscribe(
+      destination: '/topic/$chatRoomId',
+      callback: (StompFrame frame) {
+        final Map<String, dynamic> data = json.decode(frame.body!);
+        final message = ChatMessageModel.fromJson(data).toEntity();
+        controller.add(message);
+      },
+    );
+
+    /*
+    controller.onCancel = () {
+      stompClient.unsubscribe(destination: '/topic/$chatRoomId');
+      controller.close();
+    };
+    */
+
+    return controller.stream;
   }
 }

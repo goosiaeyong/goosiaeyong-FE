@@ -36,4 +36,6 @@ class ChatMessageModel {
       timestamp: timestamp,
     );
   }
+
+  toJson() {}
 }
